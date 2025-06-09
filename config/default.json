@@ -1,0 +1,40 @@
+{
+    "motor": {
+        "inertia": 0.01,
+        "damping": 0.1,
+        "torque_constant": 0.1,
+        "max_torque": 2.0,
+        "max_speed": 10.0,
+        "resistance": 1.0,
+        "inductance": 0.001
+    },
+    "controller": {
+        "position": {
+            "kp": 1.0,
+            "ki": 0.1,
+            "kd": 0.01
+        },
+        "velocity": {
+            "kp": 0.5,
+            "ki": 0.05,
+            "kd": 0.005
+        },
+        "torque": {
+            "kp": 0.2,
+            "ki": 0.02,
+            "kd": 0.002
+        }
+    },
+    "simulation": {
+        "time_step": 0.001,
+        "max_time": 10.0
+    },
+    "visualization": {
+        "update_interval": 100,
+        "plot_history": 1000
+    },
+    "logging": {
+        "data_dir": "data/logs",
+        "save_format": "csv"
+    }
+} 
