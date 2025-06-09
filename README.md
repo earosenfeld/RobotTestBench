@@ -1,99 +1,102 @@
-# RobotTestBench
+# Robot Test Bench
 
-A modular Python application for actuator and sensor testing, performance logging, and real-time data visualization. RobotTestBench provides tools for simulating and interfacing with robotic hardware, enabling comprehensive testing and analysis of motor behavior, control loop performance, and system health.
+A comprehensive simulation framework for testing and validating robot control systems, with a focus on realistic sensor modeling and motor control.
 
 ## Features
 
-- **Actuator Control Interface**
-  - Simulated motor control
-  - PID-based control for torque, velocity, and position modes
-  - Optional serial/CAN interface for real hardware
-
-- **Data Acquisition (DAQ) Layer**
-  - Real-time sensor data streaming
-  - CSV/JSON logging with metadata
-  - Test run tagging and organization
-
-- **Dyno Simulator**
-  - Robotic joint simulation with configurable parameters
-  - Inertia, friction, and load modeling
-  - Virtual sensor data generation
-
-- **Real-Time Visualization**
-  - Live signal plotting
-  - Test limit monitoring
-  - Anomaly detection
-
-- **Post-Test Analytics**
-  - Test log analysis
-  - Performance metrics computation
-  - Report generation
+- Realistic motor simulation with physical parameters
+- Advanced sensor models:
+  - Quadrature encoders with noise and edge triggering
+  - Force/torque sensors with drift and hysteresis
+  - Joint angle sensors with backlash and limit stops
+- PID control system with anti-windup
+- Real-time visualization and analysis tools
 
 ## Installation
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/yourusername/RobotTestBench.git
-cd RobotTestBench
+git clone https://github.com/yourusername/robot_testbench.git
+cd robot_testbench
 ```
 
-2. Create a virtual environment:
+2. Create and activate a virtual environment (recommended):
 ```bash
 python -m venv venv
 source venv/bin/activate  # On Windows: venv\Scripts\activate
 ```
 
-3. Install dependencies:
+3. Install the package:
 ```bash
-pip install -r requirements.txt
-```
-
-## Project Structure
-
-```
-RobotTestBench/
-├── controllers/       # PID and other control methods
-├── daq/              # Data acquisition and logging
-├── simulation/       # Dyno and actuator models
-├── analytics/        # Test metric computation + reports
-├── visualization/    # Real-time and post-test plots
-├── tests/            # Unit tests for each module
-├── data/             # Saved logs and test cases
-├── main.py           # CLI entry point or Dash app launcher
-└── README.md
+pip install -e .
 ```
 
 ## Usage
 
-1. Start the application:
+### Running Tests
+
 ```bash
-python main.py
+python -m pytest tests/
 ```
 
-2. Configure test parameters through the interface
-3. Run tests and monitor real-time data
-4. Analyze results and generate reports
+### Running Examples
 
-## Development
+```bash
+python examples/sensor_demo.py
+```
 
-- Python 3.10+ required
-- Key dependencies:
-  - numpy
-  - pandas
-  - matplotlib
-  - plotly
-  - scipy
-  - simple-pid
-  - pyserial (optional)
+### Basic Usage Example
+
+```python
+from robot_testbench.sensors import (
+    QuadratureEncoder, QuadratureEncoderConfig,
+    ForceTorqueSensor, ForceTorqueSensorConfig,
+    JointAngleSensor, JointAngleSensorConfig
+)
+
+# Create a quadrature encoder
+encoder_config = QuadratureEncoderConfig(
+    resolution=1000,  # 1000 counts per revolution
+    noise_std=0.5,    # Add some noise
+    edge_trigger_noise=0.0001  # 100 μs timing noise
+)
+encoder = QuadratureEncoder(encoder_config)
+
+# Create a force/torque sensor
+ft_config = ForceTorqueSensorConfig(
+    sensitivity=1.0,  # 1 N⋅m/V
+    noise_std=0.1,    # 100 mV noise
+    drift_rate=0.01   # 10 mV/s drift
+)
+ft_sensor = ForceTorqueSensor(ft_config)
+
+# Create a joint angle sensor
+ja_config = JointAngleSensorConfig(
+    resolution=0.001,  # 1 mrad resolution
+    noise_std=0.0005,  # 0.5 mrad noise
+    backlash=0.01      # 10 mrad backlash
+)
+ja_sensor = JointAngleSensor(ja_config)
+
+# Use the sensors
+position = 1.0  # radians
+velocity = 0.5  # rad/s
+force = 10.0    # N⋅m
+
+# Get encoder readings
+a, b = encoder.update(position, velocity, 0.01)
+
+# Get force/torque reading
+ft_reading = ft_sensor.update(force, 0.01)
+
+# Get joint angle reading
+angle_reading = ja_sensor.update(position, velocity)
+```
 
 ## Contributing
 
-1. Fork the repository
-2. Create a feature branch
-3. Commit your changes
-4. Push to the branch
-5. Create a Pull Request
+Contributions are welcome! Please feel free to submit a Pull Request.
 
 ## License
 
-MIT License - see LICENSE file for details
+This project is licensed under the MIT License - see the LICENSE file for details.

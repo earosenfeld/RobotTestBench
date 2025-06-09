@@ -22,6 +22,7 @@ class MotorTestMetadata:
     setpoint: float
     duration: float
     sample_rate: float
+    sensor_params: Optional[dict] = None  # Added sensor parameters
 
 class DataLogger:
     """Handles data acquisition and logging for test runs."""
@@ -54,20 +55,23 @@ class DataLogger:
         self.csv_handle = open(test_dir / "data.csv", "w", newline="")
         self.csv_file = csv.writer(self.csv_handle)
         
-        # Write header
+        # Write header with both raw and filtered data
         self.csv_file.writerow([
             "timestamp",
             "elapsed_time",
-            "position",
-            "velocity",
-            "current",
+            "raw_position",
+            "raw_velocity",
+            "raw_current",
+            "filtered_position",
+            "filtered_velocity",
+            "filtered_current",
             "torque",
             "control_output",
             "error"
         ])
         
     def log_data(self, data: Dict[str, float]):
-        """Log a data point."""
+        """Log a data point with both raw and filtered sensor data."""
         if self.current_test is None or self.csv_file is None:
             raise RuntimeError("No active test run")
             
@@ -75,9 +79,12 @@ class DataLogger:
         self.csv_file.writerow([
             datetime.now().isoformat(),
             elapsed,
-            data.get("position", 0.0),
-            data.get("velocity", 0.0),
-            data.get("current", 0.0),
+            data.get("raw_position", 0.0),
+            data.get("raw_velocity", 0.0),
+            data.get("raw_current", 0.0),
+            data.get("filtered_position", 0.0),
+            data.get("filtered_velocity", 0.0),
+            data.get("filtered_current", 0.0),
             data.get("torque", 0.0),
             data.get("control_output", 0.0),
             data.get("error", 0.0)
@@ -88,16 +95,14 @@ class DataLogger:
         if self.csv_handle is not None:
             self.csv_handle.close()
             self.csv_handle = None
-            self.csv_file = None
+        self.csv_file = None
         self.current_test = None
         self.start_time = None
         
     def get_test_data(self, test_name: str) -> Dict[str, Any]:
-        """Load data from a previous test run."""
+        """Load test data from file."""
         test_dir = self.data_dir / test_name
-        if not test_dir.exists():
-            raise FileNotFoundError(f"Test {test_name} not found")
-            
+        
         # Load metadata
         with open(test_dir / "metadata.json", "r") as f:
             metadata = json.load(f)
