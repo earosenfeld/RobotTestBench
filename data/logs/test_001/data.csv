@@ -1,2 +1,2 @@
-timestamp,elapsed_time,position,velocity,current,torque,control_output,error
-2025-06-08T22:15:30.772732,0.0008039474487304688,0.0,0.0,0.0,0.0,0.0,0.0
+timestamp,elapsed_time,raw_position,raw_velocity,raw_current,filtered_position,filtered_velocity,filtered_current,torque,control_output,error
+2025-06-09T09:46:20.499157,0.0021529197692871094,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0

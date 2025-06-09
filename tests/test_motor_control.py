@@ -42,7 +42,7 @@ def test_motor_simulation(motor_params):
     
     # Simulate for 1 second
     for _ in range(1000):
-        pos, vel, curr = motor.step(voltage, load_torque, dt)
+        pos, vel, curr = motor.step(dt, voltage)
         
     # Check final values
     assert abs(pos) > 0  # Should have moved
@@ -75,8 +75,8 @@ def test_pid_control(motor_params, pid_gains):
         control_history.append(control)
         error_history.append(controller.get_error())
         if i < 100 or i % 1000 == 0:
-            print(f"Step {i}: setpoint={setpoint:.3f}, pos={pos:.3f}, vel={vel:.3f}, control={control:.3f}, error={controller.get_error():.3f}, current={current:.3f}, torque={torque:.3f}")
-        motor.step(control, 0.0, dt)
+            print(f"Step {i}: setpoint={setpoint:.3f}, pos={pos:.3f}, vel={vel:.3f}, control={control:.3f}, error={controller.get_error():.3f}, current={current if current is not None else 'N/A'}, torque={torque if torque is not None else 'N/A'}")
+        motor.step(dt, control)
 
     final_pos = motor.get_state()['position']
     max_error = max(abs(e) for e in error_history)
@@ -116,8 +116,8 @@ def test_velocity_pid_control(motor_params, pid_gains):
         control_history.append(control)
         error_history.append(controller.get_error())
         if i < 100 or i % 1000 == 0:
-            print(f"Step {i}: setpoint={setpoint:.3f}, vel={vel:.3f}, control={control:.3f}, error={controller.get_error():.3f}, current={current:.3f}, torque={torque:.3f}")
-        motor.step(control, 0.0, dt)
+            print(f"Step {i}: setpoint={setpoint:.3f}, vel={vel:.3f}, control={control:.3f}, error={controller.get_error():.3f}, current={current if current is not None else 'N/A'}, torque={torque if torque is not None else 'N/A'}")
+        motor.step(dt, control)
 
     final_vel = motor.get_state()['velocity']
     max_error = max(abs(e) for e in error_history)

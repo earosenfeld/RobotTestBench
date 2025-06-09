@@ -1,6 +1,5 @@
 """
-Motor simulation module for RobotTestBench.
-Implements a basic motor model with inertia, friction, and load parameters.
+Motor simulation module with enhanced features.
 """
 
 import numpy as np
@@ -9,14 +8,21 @@ from typing import Optional, Tuple
 
 @dataclass
 class MotorParameters:
-    """Motor physical parameters."""
-    inertia: float = 0.05  # kg⋅m²
-    damping: float = 0.5  # N⋅m⋅s/rad
-    torque_constant: float = 0.2  # N⋅m/A
-    max_torque: float = 2.0  # N⋅m
-    max_speed: float = 20.0  # rad/s
-    resistance: float = 1.0  # Ω
-    inductance: float = 0.1  # H
+    """Motor parameters with enhanced features."""
+    inertia: float  # kg⋅m²
+    damping: float  # N⋅m⋅s/rad
+    torque_constant: float  # N⋅m/A
+    max_torque: float  # N⋅m
+    max_speed: float  # rad/s
+    resistance: float  # Ω
+    inductance: float  # H
+    thermal_mass: float = 0.1  # kg⋅K/J
+    thermal_resistance: float = 0.5  # K/W
+    gear_ratio: float = 1.0  # -
+    gear_efficiency: float = 1.0  # -
+    ambient_temp: float = 25.0  # °C
+    max_temp: float = 100.0  # °C
+    temp_coeff: float = 0.0039  # 1/°C (copper)
 
 @dataclass
 class PIDGains:
@@ -26,60 +32,97 @@ class PIDGains:
     kd: float  # Derivative gain
 
 class MotorSimulator:
-    """Simulates a DC motor with electrical and mechanical dynamics."""
+    """Motor simulator with enhanced features."""
     
     def __init__(self, params: MotorParameters):
-        """Initialize motor with parameters."""
+        """Initialize motor simulator."""
         self.params = params
-        self.position = 0.0
-        self.velocity = 0.0
-        self.current = 0.0
-        self.torque = 0.0
-        self.max_accel = 50.0  # rad/s² - Added acceleration limit
+        self.position = 0.0  # rad
+        self.velocity = 0.0  # rad/s
+        self.current = 0.0  # A
+        self.temperature = params.ambient_temp  # °C
+        self._last_update_time = 0.0  # s
         
+    def step(self, dt: float, voltage: float) -> tuple[float, float, float]:
+        """Step motor simulation forward in time.
+        
+        Args:
+            dt: Time step in seconds
+            voltage: Applied voltage in volts
+            
+        Returns:
+            Tuple of (position, velocity, current)
+        """
+        # Limit voltage to prevent numerical instabilities
+        voltage = np.clip(voltage, -24.0, 24.0)
+        
+        # Calculate electrical dynamics
+        voltage_drop = voltage - self.params.torque_constant * self.velocity
+        di_dt = (voltage_drop - self.params.resistance * self.current) / self.params.inductance
+        
+        # Update current with numerical stability
+        self.current = np.clip(
+            self.current + di_dt * dt,
+            -self.params.max_torque / self.params.torque_constant,
+            self.params.max_torque / self.params.torque_constant
+        )
+        
+        # Calculate torque with gearbox effects
+        motor_torque = self.current * self.params.torque_constant
+        output_torque = motor_torque * self.params.gear_ratio * self.params.gear_efficiency
+        
+        # Calculate mechanical dynamics
+        domega_dt = (output_torque - self.params.damping * self.velocity) / self.params.inertia
+        self.velocity = np.clip(
+            self.velocity + domega_dt * dt,
+            -self.params.max_speed,
+            self.params.max_speed
+        )
+        self.position += self.velocity * dt
+        
+        # Update temperature
+        copper_loss = self.current**2 * self.params.resistance
+        mechanical_loss = abs(output_torque * self.velocity) * (1.0 - self.params.gear_efficiency)
+        total_loss = copper_loss + mechanical_loss
+        
+        dtemp_dt = (total_loss - (self.temperature - self.params.ambient_temp) / self.params.thermal_resistance) / self.params.thermal_mass
+        self.temperature = np.clip(
+            self.temperature + dtemp_dt * dt,
+            self.params.ambient_temp,
+            self.params.max_temp
+        )
+        
+        self._last_update_time += dt
+        return self.position, self.velocity, self.current
+    
     def get_state(self) -> dict:
         """Get current motor state."""
         return {
             'position': self.position,
             'velocity': self.velocity,
             'current': self.current,
-            'torque': self.torque
+            'torque': self.current * self.params.torque_constant * self.params.gear_ratio * self.params.gear_efficiency,
+            'temperature': self.temperature,
+            'time': self._last_update_time
         }
-        
-    def step(self, voltage: float, load_torque: float, dt: float):
-        """Step motor simulation forward in time."""
-        # Calculate current
-        di_dt = (voltage - self.params.resistance * self.current - 
-                self.params.torque_constant * self.velocity) / self.params.inductance
-        self.current += di_dt * dt
-        
-        # Calculate torque
-        self.torque = self.params.torque_constant * self.current
-        
-        # Limit torque
-        self.torque = np.clip(self.torque, -self.params.max_torque, self.params.max_torque)
-        
-        # Calculate acceleration
-        acceleration = (self.torque - self.params.damping * self.velocity - load_torque) / self.params.inertia
-        
-        # Limit acceleration
-        acceleration = np.clip(acceleration, -self.max_accel, self.max_accel)
-        
-        # Update velocity and position
-        self.velocity += acceleration * dt
-        self.velocity = np.clip(self.velocity, -self.params.max_speed, self.params.max_speed)
-        self.position += self.velocity * dt
-        
-        # Print debug info
-        print(f"MotorSim Step: pos={self.position:.4f}, vel={self.velocity:.4f}, accel={acceleration:.4f}, dt={dt:.4f}")
-        return self.position, self.velocity, self.current
-        
-    def reset(self):
-        """Reset motor state to initial conditions."""
-        self.position = 0.0
-        self.velocity = 0.0
-        self.current = 0.0
-        self.torque = 0.0 
+    
+    def get_temperature(self) -> float:
+        """Get current motor temperature."""
+        return self.temperature
+    
+    def get_efficiency(self) -> float:
+        """Calculate motor efficiency."""
+        input_power = abs(self.current * self.params.torque_constant * self.velocity)
+        if input_power < 1e-6:  # Avoid division by zero
+            return 1.0
+        output_power = abs(self.get_state()['torque'] * self.velocity)
+        return output_power / input_power
+    
+    def get_power_loss(self) -> float:
+        """Calculate total power loss."""
+        copper_loss = self.current**2 * self.params.resistance
+        mechanical_loss = abs(self.get_state()['torque'] * self.velocity) * (1.0 - self.params.gear_efficiency)
+        return copper_loss + mechanical_loss
 
 class MotorController:
     """PID controller for motor control."""
