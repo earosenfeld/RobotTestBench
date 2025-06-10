@@ -528,28 +528,47 @@ class TestResultsDashboard:
         """Create a plot showing velocity data."""
         data = test_data['data']
         metadata = test_data['metadata']
-        velocity_setpoint = metadata.get('velocity_setpoint', 0)  # Default to 0 if not specified
-        
+        velocity_setpoint = metadata.get('velocity_setpoint', 0)
         fig = make_subplots(rows=3, cols=1,
                            subplot_titles=('Velocity vs Time', 'Velocity Error Analysis', 'Jerk Analysis'),
                            vertical_spacing=0.1)
-        
         # Main velocity plot
+        y = data['filtered_velocity']
+        time = data['elapsed_time']
+        mean = y.mean()
+        std = y.std()
+        ucl = mean + 3 * std
+        lcl = mean - 3 * std
+        out_of_control = (y > ucl) | (y < lcl)
         fig.add_trace(
-            go.Scatter(x=data['elapsed_time'], y=data['filtered_velocity'],
-                      name='Actual Velocity', line=dict(color='green')),
+            go.Scatter(x=time, y=y, name='Actual Velocity', line=dict(color='green')),
             row=1, col=1
         )
         fig.add_trace(
-            go.Scatter(x=data['elapsed_time'], y=[velocity_setpoint] * len(data),
+            go.Scatter(x=time, y=[mean]*len(y), name='Mean', line=dict(color='blue', dash='dash')),
+            row=1, col=1
+        )
+        fig.add_trace(
+            go.Scatter(x=time, y=[ucl]*len(y), name='+3σ', line=dict(color='red', dash='dot')),
+            row=1, col=1
+        )
+        fig.add_trace(
+            go.Scatter(x=time, y=[lcl]*len(y), name='-3σ', line=dict(color='red', dash='dot')),
+            row=1, col=1
+        )
+        fig.add_trace(
+            go.Scatter(x=time[out_of_control], y=y[out_of_control], mode='markers', name='Out of Control', marker=dict(color='orange', size=8, symbol='x')),
+            row=1, col=1
+        )
+        fig.add_trace(
+            go.Scatter(x=time, y=[velocity_setpoint] * len(data),
                       name='Velocity Setpoint', line=dict(color='red', dash='dash')),
             row=1, col=1
         )
-        
         # Velocity error analysis
         velocity_error = data['filtered_velocity'] - velocity_setpoint
         fig.add_trace(
-            go.Scatter(x=data['elapsed_time'], y=velocity_error,
+            go.Scatter(x=time, y=velocity_error,
                       name='Velocity Error', line=dict(color='orange')),
             row=2, col=1
         )
@@ -559,7 +578,7 @@ class TestResultsDashboard:
         acceleration = data['filtered_velocity'].diff().fillna(0) / dt
         jerk = acceleration.diff().fillna(0) / dt
         fig.add_trace(
-            go.Scatter(x=data['elapsed_time'], y=jerk,
+            go.Scatter(x=time, y=jerk,
                       name='Jerk', line=dict(color='purple')),
             row=3, col=1
         )
@@ -578,24 +597,43 @@ class TestResultsDashboard:
         data = test_data['data']
         metadata = test_data['metadata']
         motor_params = metadata['motor_params']
-        torque_setpoint = metadata.get('torque_setpoint', 0)  # Default to 0 if not specified
-        
+        torque_setpoint = metadata.get('torque_setpoint', 0)
         fig = make_subplots(rows=3, cols=1,
                            subplot_titles=('Torque vs Time', 'Joint Stiffness Analysis', 'Damping Analysis'),
                            vertical_spacing=0.1)
-        
         # Main torque plot
+        y = data['torque']
+        time = data['elapsed_time']
+        mean = y.mean()
+        std = y.std()
+        ucl = mean + 3 * std
+        lcl = mean - 3 * std
+        out_of_control = (y > ucl) | (y < lcl)
         fig.add_trace(
-            go.Scatter(x=data['elapsed_time'], y=data['torque'],
-                      name='Actual Torque', line=dict(color='red')),
+            go.Scatter(x=time, y=y, name='Actual Torque', line=dict(color='red')),
             row=1, col=1
         )
         fig.add_trace(
-            go.Scatter(x=data['elapsed_time'], y=[torque_setpoint] * len(data),
+            go.Scatter(x=time, y=[mean]*len(y), name='Mean', line=dict(color='blue', dash='dash')),
+            row=1, col=1
+        )
+        fig.add_trace(
+            go.Scatter(x=time, y=[ucl]*len(y), name='+3σ', line=dict(color='green', dash='dot')),
+            row=1, col=1
+        )
+        fig.add_trace(
+            go.Scatter(x=time, y=[lcl]*len(y), name='-3σ', line=dict(color='green', dash='dot')),
+            row=1, col=1
+        )
+        fig.add_trace(
+            go.Scatter(x=time[out_of_control], y=y[out_of_control], mode='markers', name='Out of Control', marker=dict(color='orange', size=8, symbol='x')),
+            row=1, col=1
+        )
+        fig.add_trace(
+            go.Scatter(x=time, y=[torque_setpoint] * len(data),
                       name='Torque Setpoint', line=dict(color='blue', dash='dash')),
             row=1, col=1
         )
-        
         # Joint stiffness analysis (torque vs position)
         # K = dτ/dθ (N⋅m/rad)
         # Use a moving window to calculate stiffness
@@ -706,34 +744,53 @@ class TestResultsDashboard:
         data = test_data['data']
         metadata = test_data['metadata']
         motor_params = metadata['motor_params']
-        current_setpoint = metadata.get('current_setpoint', 0)  # Default to 0 if not specified
-        
+        current_setpoint = metadata.get('current_setpoint', 0)
         fig = make_subplots(rows=3, cols=1,
                            subplot_titles=('Current vs Time', 'Power Analysis', 'Efficiency Analysis'),
                            vertical_spacing=0.1)
-        
         # Main current plot
+        y = data['filtered_current']
+        time = data['elapsed_time']
+        mean = y.mean()
+        std = y.std()
+        ucl = mean + 3 * std
+        lcl = mean - 3 * std
+        out_of_control = (y > ucl) | (y < lcl)
         fig.add_trace(
-            go.Scatter(x=data['elapsed_time'], y=data['filtered_current'],
-                      name='Actual Current', line=dict(color='blue')),
+            go.Scatter(x=time, y=y, name='Actual Current', line=dict(color='blue')),
             row=1, col=1
         )
         fig.add_trace(
-            go.Scatter(x=data['elapsed_time'], y=[current_setpoint] * len(data),
+            go.Scatter(x=time, y=[mean]*len(y), name='Mean', line=dict(color='green', dash='dash')),
+            row=1, col=1
+        )
+        fig.add_trace(
+            go.Scatter(x=time, y=[ucl]*len(y), name='+3σ', line=dict(color='red', dash='dot')),
+            row=1, col=1
+        )
+        fig.add_trace(
+            go.Scatter(x=time, y=[lcl]*len(y), name='-3σ', line=dict(color='red', dash='dot')),
+            row=1, col=1
+        )
+        fig.add_trace(
+            go.Scatter(x=time[out_of_control], y=y[out_of_control], mode='markers', name='Out of Control', marker=dict(color='orange', size=8, symbol='x')),
+            row=1, col=1
+        )
+        fig.add_trace(
+            go.Scatter(x=time, y=[current_setpoint] * len(data),
                       name='Current Setpoint', line=dict(color='red', dash='dash')),
             row=1, col=1
         )
-        
         # Power analysis
         electrical_power = data['filtered_current']**2 * motor_params['resistance']
         mechanical_power = data['torque'] * data['filtered_velocity']
         fig.add_trace(
-            go.Scatter(x=data['elapsed_time'], y=electrical_power,
+            go.Scatter(x=time, y=electrical_power,
                       name='Electrical Power', line=dict(color='green')),
             row=2, col=1
         )
         fig.add_trace(
-            go.Scatter(x=data['elapsed_time'], y=mechanical_power,
+            go.Scatter(x=time, y=mechanical_power,
                       name='Mechanical Power', line=dict(color='orange')),
             row=2, col=1
         )
@@ -741,7 +798,7 @@ class TestResultsDashboard:
         # Efficiency analysis
         efficiency = mechanical_power / (electrical_power + 1e-6) * 100  # Avoid division by zero
         fig.add_trace(
-            go.Scatter(x=data['elapsed_time'], y=efficiency,
+            go.Scatter(x=time, y=efficiency,
                       name='Efficiency (%)', line=dict(color='purple')),
             row=3, col=1
         )
@@ -1349,42 +1406,57 @@ class TestResultsDashboard:
         
     def _create_thermal_model_plot(self, test_data: Dict) -> go.Figure:
         """Create a plot showing thermal model analysis."""
+        import plotly.graph_objs as go
         data = test_data['data']
         motor_params = test_data['metadata']['motor_params']
-        
+        time = data['elapsed_time']
         # Calculate power dissipation
-        power = data['filtered_current']**2 * motor_params['resistance']
-        
-        # Calculate efficiency
+        electrical_power = data['filtered_current']**2 * motor_params['resistance']
         mechanical_power = data['torque'] * data['filtered_velocity']
-        total_power = power
-        efficiency = mechanical_power / total_power * 100
-        
+        power_loss = electrical_power - mechanical_power
+        # Calculate efficiency
+        efficiency = mechanical_power / (electrical_power + 1e-6) * 100
+        # SPC overlays for power dissipation
+        mean_power = electrical_power.mean()
+        std_power = electrical_power.std()
+        ucl_power = mean_power + 3 * std_power
+        lcl_power = mean_power - 3 * std_power
+        out_of_control_power = (electrical_power > ucl_power) | (electrical_power < lcl_power)
+        # SPC overlays for efficiency
+        mean_eff = efficiency.mean()
+        std_eff = efficiency.std()
+        ucl_eff = mean_eff + 3 * std_eff
+        lcl_eff = mean_eff - 3 * std_eff
+        out_of_control_eff = (efficiency > ucl_eff) | (efficiency < lcl_eff)
         fig = make_subplots(rows=2, cols=1,
                            subplot_titles=('Power Dissipation', 'Motor Efficiency'),
                            vertical_spacing=0.1)
-        
-        # Power dissipation
-        fig.add_trace(
-            go.Scatter(x=data['elapsed_time'], y=power,
-                      name='Power Dissipation', line=dict(color='orange')),
-            row=1, col=1
-        )
-        
+        # Power Dissipation
+        fig.add_trace(go.Scatter(x=time, y=electrical_power, name='Electrical Power', line=dict(color='orange')), row=1, col=1)
+        fig.add_trace(go.Scatter(x=time, y=mechanical_power, name='Mechanical Power', line=dict(color='green')), row=1, col=1)
+        fig.add_trace(go.Scatter(x=time, y=power_loss, name='Power Loss', line=dict(color='red', dash='dot')), row=1, col=1)
+        fig.add_trace(go.Scatter(x=time, y=[mean_power]*len(time), name='Mean', line=dict(color='blue', dash='dash')), row=1, col=1)
+        fig.add_trace(go.Scatter(x=time, y=[ucl_power]*len(time), name='+3σ', line=dict(color='purple', dash='dot')), row=1, col=1)
+        fig.add_trace(go.Scatter(x=time, y=[lcl_power]*len(time), name='-3σ', line=dict(color='purple', dash='dot')), row=1, col=1)
+        fig.add_trace(go.Scatter(x=time[out_of_control_power], y=electrical_power[out_of_control_power], mode='markers', name='Out of Control', marker=dict(color='black', size=8, symbol='x')), row=1, col=1)
+        fig.update_yaxes(title_text="Power (W)", row=1, col=1)
+        fig.update_xaxes(title_text="Time (s)", row=1, col=1)
         # Efficiency
-        fig.add_trace(
-            go.Scatter(x=data['elapsed_time'], y=efficiency,
-                      name='Efficiency', line=dict(color='green')),
-            row=2, col=1
-        )
-        
+        fig.add_trace(go.Scatter(x=time, y=efficiency, name='Efficiency (%)', line=dict(color='blue')), row=2, col=1)
+        fig.add_trace(go.Scatter(x=time, y=[100]*len(time), name='100% Reference', line=dict(color='gray', dash='dash')), row=2, col=1)
+        fig.add_trace(go.Scatter(x=time, y=[80]*len(time), name='80% Reference', line=dict(color='green', dash='dot')), row=2, col=1)
+        fig.add_trace(go.Scatter(x=time, y=[mean_eff]*len(time), name='Mean', line=dict(color='orange', dash='dash')), row=2, col=1)
+        fig.add_trace(go.Scatter(x=time, y=[ucl_eff]*len(time), name='+3σ', line=dict(color='red', dash='dot')), row=2, col=1)
+        fig.add_trace(go.Scatter(x=time, y=[lcl_eff]*len(time), name='-3σ', line=dict(color='red', dash='dot')), row=2, col=1)
+        fig.add_trace(go.Scatter(x=time[out_of_control_eff], y=efficiency[out_of_control_eff], mode='markers', name='Out of Control', marker=dict(color='black', size=8, symbol='x')), row=2, col=1)
+        fig.update_yaxes(title_text="Efficiency (%)", row=2, col=1)
+        fig.update_xaxes(title_text="Time (s)", row=2, col=1)
         fig.update_layout(
             title='Thermal Model Analysis',
-            height=600,
+            height=700,
             showlegend=True,
             hovermode='x unified'
         )
-        
         return fig
         
     def run_server(self, debug: bool = True, port: int = 8050):

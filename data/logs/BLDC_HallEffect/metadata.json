@@ -1,5 +1,5 @@
 {
-  "test_name": "sample_test",
+  "test_name": "BLDC_HallEffect",
   "timestamp": "2025-06-09T21:28:15.973359",
   "motor_specs": {
     "type": "BLDC",
