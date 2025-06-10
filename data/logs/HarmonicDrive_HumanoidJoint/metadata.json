@@ -1,0 +1,67 @@
+{
+  "test_name": "HarmonicDrive_HumanoidJoint",
+  "timestamp": "2025-06-09T22:00:00.000000",
+  "motor_specs": {
+    "type": "BLDC",
+    "model": "Custom BLDC for Harmonic Drive",
+    "rated_power": 150,
+    "rated_torque": 1.5,
+    "rated_speed": 3000,
+    "rated_current": 5.0,
+    "rated_voltage": 48,
+    "encoder_resolution": 4096,
+    "gear_ratio": 100.0
+  },
+  "motor_params": {
+    "inertia": 0.08,
+    "damping": 0.15,
+    "torque_constant": 0.12,
+    "max_torque": 100.0,
+    "max_speed": 2.0,
+    "resistance": 0.8,
+    "inductance": 0.08,
+    "thermal_mass": 0.2,
+    "thermal_resistance": 0.4,
+    "gear_ratio": 100.0,
+    "gear_efficiency": 0.7,
+    "ambient_temp": 25.0,
+    "max_temp": 90.0,
+    "temp_coeff": 0.0035
+  },
+  "sensor_specs": {
+    "position": {
+      "type": "Absolute Encoder",
+      "resolution": 0.0015,
+      "range": 6.28
+    },
+    "velocity": {
+      "type": "Derived from Encoder",
+      "resolution": 0.01,
+      "range": 50
+    },
+    "current": {
+      "type": "Hall Effect Current Sensor",
+      "resolution": 0.01,
+      "range": 10
+    },
+    "torque": {
+      "type": "Strain Gauge",
+      "resolution": 0.01,
+      "range": 100
+    }
+  },
+  "sensor_params": {
+    "position_noise": 0.002,
+    "velocity_noise": 0.02,
+    "current_noise": 0.01
+  },
+  "pid_gains": {
+    "kp": 10.0,
+    "ki": 0.5,
+    "kd": 1.0
+  },
+  "control_mode": "position",
+  "setpoint": 1.5,
+  "duration": 10.0,
+  "sample_rate": 1000.0
+} 
