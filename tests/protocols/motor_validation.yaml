@@ -1,0 +1,101 @@
+name: Motor Validation Protocol
+description: Comprehensive validation of motor performance and control
+
+parameters:
+  motor:
+    max_velocity: 1000.0  # rad/s
+    max_torque: 10.0      # N⋅m
+    inertia: 0.001        # kg⋅m²
+    damping: 0.001        # N⋅m⋅s/rad
+    friction: 0.001       # N⋅m
+
+  test:
+    duration: 10.0        # s
+    time_step: 0.001      # s
+    hold_time: 1.0        # s
+    load_torque: 2.0      # N⋅m
+
+  controller:
+    kp: 100.0
+    ki: 10.0
+    kd: 1.0
+    output_limits: [-10.0, 10.0]  # N⋅m
+
+steps:
+  - name: Step Response
+    type: position
+    setpoint: 1.0  # rad
+    duration: 2.0  # s
+    tolerance: 0.01  # rad
+    metrics:
+      - settling_time:
+          threshold: 0.1  # s
+          window: 0.5     # s
+      - overshoot:
+          threshold: 0.1   # %
+      - rise_time:
+          threshold: 0.2   # s
+
+  - name: Velocity Tracking
+    type: velocity
+    setpoint: 10.0  # rad/s
+    duration: 2.0  # s
+    tolerance: 0.1  # rad/s
+    metrics:
+      - steady_state_error:
+          threshold: 0.01  # rad/s
+          window: 0.2      # s
+      - tracking_error:
+          threshold: 0.1   # rad/s
+
+  - name: Load Rejection
+    type: position
+    setpoint: 0.0  # rad
+    duration: 2.0  # s
+    load_torque: 2.0  # N⋅m
+    metrics:
+      - position_deviation:
+          threshold: 0.01  # rad
+      - recovery_time:
+          threshold: 0.2   # s
+
+  - name: Thermal Response
+    type: duty_cycle
+    profile:
+      - torque: 5.0  # N⋅m
+        duration: 60  # s
+      - torque: 0.0  # N⋅m
+        duration: 30  # s
+    cycles: 10
+    metrics:
+      - temperature_rise:
+          threshold: 20.0  # °C
+      - thermal_time_constant:
+          threshold: 300   # s
+
+data_logging:
+  enabled: true
+  variables:
+    - position
+    - velocity
+    - torque
+    - current
+    - temperature
+    - control_output
+    - error
+  format: csv
+  directory: reports/motor_validation
+
+visualization:
+  plots:
+    - type: time_series
+      variables: [position, velocity, torque]
+      title: "Motor Response"
+    - type: xy
+      x: position
+      y: velocity
+      title: "Phase Plot"
+    - type: scatter
+      x: time
+      y: temperature
+      title: "Thermal Response" 

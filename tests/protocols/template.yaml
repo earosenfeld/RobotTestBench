@@ -1,0 +1,67 @@
+name: Test Plan Template
+description: Template for creating new test plans
+
+parameters:
+  motor:
+    max_velocity: 1000.0  # rad/s
+    max_torque: 10.0      # N⋅m
+    inertia: 0.001        # kg⋅m²
+    damping: 0.001        # N⋅m⋅s/rad
+    friction: 0.001       # N⋅m
+
+  test:
+    duration: 10.0        # s
+    time_step: 0.001      # s
+    hold_time: 1.0        # s
+    load_torque: 2.0      # N⋅m
+
+  controller:
+    kp: 100.0
+    ki: 10.0
+    kd: 1.0
+    output_limits: [-10.0, 10.0]  # N⋅m
+
+steps:
+  - name: Step 1
+    type: position
+    setpoint: 1.0  # rad
+    duration: 2.0  # s
+    tolerance: 0.01  # rad
+
+  - name: Step 2
+    type: velocity
+    setpoint: 10.0  # rad/s
+    duration: 2.0  # s
+    tolerance: 0.1  # rad/s
+
+  - name: Step 3
+    type: torque
+    setpoint: 2.0  # N⋅m
+    duration: 2.0  # s
+    tolerance: 0.1  # N⋅m
+
+metrics:
+  - name: settling_time
+    threshold: 0.1  # s
+    window: 0.5     # s
+    
+  - name: steady_state_error
+    threshold: 0.01  # rad
+    window: 0.2      # s
+    
+  - name: overshoot
+    threshold: 0.1   # %
+    
+  - name: rise_time
+    threshold: 0.2   # s
+
+data_logging:
+  enabled: true
+  variables:
+    - position
+    - velocity
+    - torque
+    - control_output
+    - error
+  format: csv
+  directory: data/test_name 

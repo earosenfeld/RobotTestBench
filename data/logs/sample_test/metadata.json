@@ -1,9 +1,9 @@
 {
-  "test_name": "test_001",
-  "timestamp": "2025-06-09T21:18:09.476459",
+  "test_name": "sample_test",
+  "timestamp": "2025-06-09T21:28:15.973359",
   "motor_params": {
     "inertia": 0.05,
-    "damping": 1.0,
+    "damping": 0.1,
     "torque_constant": 0.1,
     "max_torque": 4.0,
     "max_speed": 20.0,
@@ -26,5 +26,9 @@
   "setpoint": 1.0,
   "duration": 10.0,
   "sample_rate": 1000.0,
-  "sensor_params": null
+  "sensor_params": {
+    "position_noise": 0.01,
+    "velocity_noise": 0.1,
+    "current_noise": 0.05
+  }
 }
