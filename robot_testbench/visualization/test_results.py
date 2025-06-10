@@ -63,6 +63,21 @@ class TestResultsDashboard:
                 ])
             ], style={'width': '90%', 'margin': '20px auto'}),
             
+            # Hardware Configuration
+            html.Div([
+                html.H3("Hardware Configuration"),
+                html.Div([
+                    html.Div([
+                        html.H4("Motor Specifications"),
+                        html.Div(id='motor-specs', style={'margin': '20px'})
+                    ], style={'width': '50%', 'display': 'inline-block'}),
+                    html.Div([
+                        html.H4("Sensor Specifications"),
+                        html.Div(id='sensor-specs', style={'margin': '20px'})
+                    ], style={'width': '50%', 'display': 'inline-block'})
+                ])
+            ]),
+            
             # System Configuration
             html.Div([
                 html.H3("System Configuration"),
@@ -175,6 +190,8 @@ class TestResultsDashboard:
              Output('motor-params', 'children'),
              Output('pid-gains', 'children'),
              Output('sensor-config', 'children'),
+             Output('motor-specs', 'children'),
+             Output('sensor-specs', 'children'),
              Output('position-plot', 'figure'),
              Output('velocity-plot', 'figure'),
              Output('torque-plot', 'figure'),
@@ -193,7 +210,7 @@ class TestResultsDashboard:
                 print("No test selected, returning empty state")
                 empty_div = html.Div("Select a test to view results")
                 empty_fig = self._create_empty_figure("")
-                return [empty_div] * 5 + [empty_fig] * 8
+                return [empty_div] * 7 + [empty_fig] * 8
                 
             # Load test data
             print(f"\nLoading test data for: {test_name}")
@@ -202,7 +219,7 @@ class TestResultsDashboard:
                 print("Failed to load test data")
                 error_div = html.Div("Error loading test data")
                 empty_fig = self._create_empty_figure("")
-                return [error_div] * 5 + [empty_fig] * 8
+                return [error_div] * 7 + [empty_fig] * 8
                 
             print("\nTest data loaded successfully")
             print(f"Metadata keys: {test_data['metadata'].keys()}")
@@ -225,6 +242,8 @@ class TestResultsDashboard:
                     self._create_motor_params_table(test_data['metadata']),
                     self._create_pid_gains_table(test_data['metadata']),
                     self._create_sensor_config_table(test_data['metadata']),
+                    self._create_motor_specs_table(test_data['metadata']),
+                    self._create_sensor_specs_table(test_data['metadata']),
                     self._create_empty_figure("Position vs Time"),
                     self._create_empty_figure("Velocity vs Time"),
                     self._create_empty_figure("Torque vs Time"),
@@ -247,6 +266,8 @@ class TestResultsDashboard:
             motor_params = self._create_motor_params_table(test_data['metadata'])
             pid_gains = self._create_pid_gains_table(test_data['metadata'])
             sensor_config = self._create_sensor_config_table(test_data['metadata'])
+            motor_specs = self._create_motor_specs_table(test_data['metadata'])
+            sensor_specs = self._create_sensor_specs_table(test_data['metadata'])
             
             # Create plots
             print("\nCreating plots")
@@ -254,17 +275,14 @@ class TestResultsDashboard:
             velocity_fig = self._create_velocity_plot(test_data)
             torque_fig = self._create_torque_plot(test_data)
             current_fig = self._create_current_plot(test_data)
-            
-            # Create sensor analysis plots
             sensor_comparison_fig = self._create_sensor_comparison_plot(test_data)
             sensor_noise_fig = self._create_sensor_noise_plot(test_data)
-            
-            # Create thermal analysis plots
             temperature_fig = self._create_temperature_plot(test_data)
             thermal_model_fig = self._create_thermal_model_plot(test_data)
             
             print("=== Dashboard Update Complete ===\n")
             return (summary, metrics, motor_params, pid_gains, sensor_config,
+                   motor_specs, sensor_specs,
                    position_fig, velocity_fig, torque_fig, current_fig,
                    sensor_comparison_fig, sensor_noise_fig,
                    temperature_fig, thermal_model_fig)
@@ -455,100 +473,284 @@ class TestResultsDashboard:
         ])
         
     def _create_position_plot(self, test_data: Dict) -> go.Figure:
-        """Create position vs time plot."""
-        data = test_data["data"]
-        setpoint = test_data["metadata"]["setpoint"]
-        print(f"\nCreating position plot with setpoint: {setpoint}")
-        print(f"Position data range: {data['filtered_position'].min():.2f} to {data['filtered_position'].max():.2f}")
+        """Create a plot showing position data."""
+        data = test_data['data']
+        metadata = test_data['metadata']
+        setpoint = metadata['setpoint']
         
-        fig = go.Figure()
-        fig.add_trace(go.Scatter(
-            x=data['elapsed_time'],
-            y=data['filtered_position'],
-            name='Position',
-            line=dict(color='blue')
-        ))
-        fig.add_trace(go.Scatter(
-            x=data['elapsed_time'],
-            y=[setpoint] * len(data),
-            name='Setpoint',
-            line=dict(color='red', dash='dash')
-        ))
+        fig = make_subplots(rows=2, cols=1,
+                           subplot_titles=('Position vs Time', 'Position Error Analysis'),
+                           vertical_spacing=0.1)
+        
+        # Main position plot
+        fig.add_trace(
+            go.Scatter(x=data['elapsed_time'], y=data['filtered_position'],
+                      name='Actual Position', line=dict(color='blue')),
+            row=1, col=1
+        )
+        fig.add_trace(
+            go.Scatter(x=data['elapsed_time'], y=[setpoint] * len(data),
+                      name='Setpoint', line=dict(color='red', dash='dash')),
+            row=1, col=1
+        )
+        
+        # Position error analysis
+        position_error = data['filtered_position'] - setpoint
+        fig.add_trace(
+            go.Scatter(x=data['elapsed_time'], y=position_error,
+                      name='Position Error', line=dict(color='orange')),
+            row=2, col=1
+        )
+        
+        # Add error bounds
+        error_std = position_error.std()
+        fig.add_trace(
+            go.Scatter(x=data['elapsed_time'], y=[2*error_std]*len(data),
+                      name='+2σ Bound', line=dict(color='gray', dash='dot')),
+            row=2, col=1
+        )
+        fig.add_trace(
+            go.Scatter(x=data['elapsed_time'], y=[-2*error_std]*len(data),
+                      name='-2σ Bound', line=dict(color='gray', dash='dot')),
+            row=2, col=1
+        )
         
         fig.update_layout(
-            title='Position vs Time',
-            xaxis_title='Time (s)',
-            yaxis_title='Position (rad)',
-            showlegend=True
+            title='Position Control Analysis',
+            height=800,
+            showlegend=True,
+            hovermode='x unified'
         )
         
         return fig
         
     def _create_velocity_plot(self, test_data: Dict) -> go.Figure:
-        """Create velocity vs time plot."""
-        data = test_data["data"]
-        print(f"\nCreating velocity plot")
-        print(f"Velocity data range: {data['filtered_velocity'].min():.2f} to {data['filtered_velocity'].max():.2f}")
+        """Create a plot showing velocity data."""
+        data = test_data['data']
+        metadata = test_data['metadata']
+        velocity_setpoint = metadata.get('velocity_setpoint', 0)  # Default to 0 if not specified
         
-        fig = go.Figure()
-        fig.add_trace(go.Scatter(
-            x=data['elapsed_time'],
-            y=data['filtered_velocity'],
-            name='Velocity',
-            line=dict(color='green')
-        ))
+        fig = make_subplots(rows=3, cols=1,
+                           subplot_titles=('Velocity vs Time', 'Velocity Error Analysis', 'Jerk Analysis'),
+                           vertical_spacing=0.1)
+        
+        # Main velocity plot
+        fig.add_trace(
+            go.Scatter(x=data['elapsed_time'], y=data['filtered_velocity'],
+                      name='Actual Velocity', line=dict(color='green')),
+            row=1, col=1
+        )
+        fig.add_trace(
+            go.Scatter(x=data['elapsed_time'], y=[velocity_setpoint] * len(data),
+                      name='Velocity Setpoint', line=dict(color='red', dash='dash')),
+            row=1, col=1
+        )
+        
+        # Velocity error analysis
+        velocity_error = data['filtered_velocity'] - velocity_setpoint
+        fig.add_trace(
+            go.Scatter(x=data['elapsed_time'], y=velocity_error,
+                      name='Velocity Error', line=dict(color='orange')),
+            row=2, col=1
+        )
+        
+        # Jerk analysis (rate of change of acceleration)
+        dt = data['elapsed_time'].diff().fillna(0)
+        acceleration = data['filtered_velocity'].diff().fillna(0) / dt
+        jerk = acceleration.diff().fillna(0) / dt
+        fig.add_trace(
+            go.Scatter(x=data['elapsed_time'], y=jerk,
+                      name='Jerk', line=dict(color='purple')),
+            row=3, col=1
+        )
         
         fig.update_layout(
-            title='Velocity vs Time',
-            xaxis_title='Time (s)',
-            yaxis_title='Velocity (rad/s)',
-            showlegend=True
+            title='Velocity Control Analysis',
+            height=1000,
+            showlegend=True,
+            hovermode='x unified'
         )
         
         return fig
         
     def _create_torque_plot(self, test_data: Dict) -> go.Figure:
-        """Create torque vs time plot."""
-        data = test_data["data"]
-        print(f"\nCreating torque plot")
-        print(f"Torque data range: {data['torque'].min():.2f} to {data['torque'].max():.2f}")
+        """Create a plot showing torque data."""
+        data = test_data['data']
+        metadata = test_data['metadata']
+        motor_params = metadata['motor_params']
+        torque_setpoint = metadata.get('torque_setpoint', 0)  # Default to 0 if not specified
         
-        fig = go.Figure()
-        fig.add_trace(go.Scatter(
-            x=data['elapsed_time'],
-            y=data['torque'],
-            name='Torque',
-            line=dict(color='orange')
-        ))
+        fig = make_subplots(rows=3, cols=1,
+                           subplot_titles=('Torque vs Time', 'Joint Stiffness Analysis', 'Damping Analysis'),
+                           vertical_spacing=0.1)
+        
+        # Main torque plot
+        fig.add_trace(
+            go.Scatter(x=data['elapsed_time'], y=data['torque'],
+                      name='Actual Torque', line=dict(color='red')),
+            row=1, col=1
+        )
+        fig.add_trace(
+            go.Scatter(x=data['elapsed_time'], y=[torque_setpoint] * len(data),
+                      name='Torque Setpoint', line=dict(color='blue', dash='dash')),
+            row=1, col=1
+        )
+        
+        # Joint stiffness analysis (torque vs position)
+        # K = dτ/dθ (N⋅m/rad)
+        # Use a moving window to calculate stiffness
+        window_size = 50  # Adjust window size based on your sampling rate
+        position = data['filtered_position'].values
+        torque = data['torque'].values
+        time = data['elapsed_time'].values
+        
+        # Calculate stiffness using linear regression over moving windows
+        stiffness = np.zeros_like(position)
+        for i in range(len(position)):
+            start_idx = max(0, i - window_size // 2)
+            end_idx = min(len(position), i + window_size // 2)
+            
+            if end_idx - start_idx > 1:  # Need at least 2 points for regression
+                pos_window = position[start_idx:end_idx]
+                torque_window = torque[start_idx:end_idx]
+                
+                # Only calculate stiffness if there's significant position change
+                if np.std(pos_window) > 1e-3:  # Threshold for meaningful position change
+                    # Linear regression
+                    slope, _ = np.polyfit(pos_window, torque_window, 1)
+                    stiffness[i] = slope
+                else:
+                    stiffness[i] = np.nan
+        
+        # Filter out extreme values
+        stiffness = np.clip(stiffness, -1000, 1000)  # Adjust limits based on your system
+        
+        fig.add_trace(
+            go.Scatter(x=time, y=stiffness,
+                      name='Joint Stiffness', line=dict(color='green')),
+            row=2, col=1
+        )
+        
+        # Add nominal stiffness line if available
+        if 'nominal_stiffness' in motor_params:
+            fig.add_trace(
+                go.Scatter(x=time, 
+                          y=[motor_params['nominal_stiffness']] * len(time),
+                          name='Nominal Stiffness', 
+                          line=dict(color='gray', dash='dash')),
+                row=2, col=1
+            )
+        
+        # Damping analysis (torque vs velocity)
+        # B = dτ/dω (N⋅m⋅s/rad)
+        velocity = data['filtered_velocity'].values
+        
+        # Calculate damping using the same window approach
+        damping = np.zeros_like(velocity)
+        for i in range(len(velocity)):
+            start_idx = max(0, i - window_size // 2)
+            end_idx = min(len(velocity), i + window_size // 2)
+            
+            if end_idx - start_idx > 1:
+                vel_window = velocity[start_idx:end_idx]
+                torque_window = torque[start_idx:end_idx]
+                
+                # Only calculate damping if there's significant velocity change
+                if np.std(vel_window) > 1e-3:  # Threshold for meaningful velocity change
+                    # Linear regression
+                    slope, _ = np.polyfit(vel_window, torque_window, 1)
+                    damping[i] = slope
+                else:
+                    damping[i] = np.nan
+        
+        # Filter out extreme values
+        damping = np.clip(damping, -100, 100)  # Adjust limits based on your system
+        
+        fig.add_trace(
+            go.Scatter(x=time, y=damping,
+                      name='Damping Coefficient', line=dict(color='orange')),
+            row=3, col=1
+        )
+        
+        # Add nominal damping line if available
+        if 'nominal_damping' in motor_params:
+            fig.add_trace(
+                go.Scatter(x=time, 
+                          y=[motor_params['nominal_damping']] * len(time),
+                          name='Nominal Damping', 
+                          line=dict(color='gray', dash='dash')),
+                row=3, col=1
+            )
+        
+        # Update y-axis labels with units
+        fig.update_yaxes(title_text="Torque (N⋅m)", row=1, col=1)
+        fig.update_yaxes(title_text="Stiffness (N⋅m/rad)", row=2, col=1)
+        fig.update_yaxes(title_text="Damping (N⋅m⋅s/rad)", row=3, col=1)
+        
+        # Update x-axis labels
+        fig.update_xaxes(title_text="Time (s)", row=1, col=1)
+        fig.update_xaxes(title_text="Time (s)", row=2, col=1)
+        fig.update_xaxes(title_text="Time (s)", row=3, col=1)
         
         fig.update_layout(
-            title='Torque vs Time',
-            xaxis_title='Time (s)',
-            yaxis_title='Torque (N⋅m)',
-            showlegend=True
+            title='Torque Control Analysis',
+            height=1000,
+            showlegend=True,
+            hovermode='x unified'
         )
         
         return fig
         
     def _create_current_plot(self, test_data: Dict) -> go.Figure:
-        """Create current vs time plot."""
-        data = test_data["data"]
-        print(f"\nCreating current plot")
-        print(f"Current data range: {data['filtered_current'].min():.2f} to {data['filtered_current'].max():.2f}")
+        """Create a plot showing current data."""
+        data = test_data['data']
+        metadata = test_data['metadata']
+        motor_params = metadata['motor_params']
+        current_setpoint = metadata.get('current_setpoint', 0)  # Default to 0 if not specified
         
-        fig = go.Figure()
-        fig.add_trace(go.Scatter(
-            x=data['elapsed_time'],
-            y=data['filtered_current'],
-            name='Current',
-            line=dict(color='purple')
-        ))
+        fig = make_subplots(rows=3, cols=1,
+                           subplot_titles=('Current vs Time', 'Power Analysis', 'Efficiency Analysis'),
+                           vertical_spacing=0.1)
+        
+        # Main current plot
+        fig.add_trace(
+            go.Scatter(x=data['elapsed_time'], y=data['filtered_current'],
+                      name='Actual Current', line=dict(color='blue')),
+            row=1, col=1
+        )
+        fig.add_trace(
+            go.Scatter(x=data['elapsed_time'], y=[current_setpoint] * len(data),
+                      name='Current Setpoint', line=dict(color='red', dash='dash')),
+            row=1, col=1
+        )
+        
+        # Power analysis
+        electrical_power = data['filtered_current']**2 * motor_params['resistance']
+        mechanical_power = data['torque'] * data['filtered_velocity']
+        fig.add_trace(
+            go.Scatter(x=data['elapsed_time'], y=electrical_power,
+                      name='Electrical Power', line=dict(color='green')),
+            row=2, col=1
+        )
+        fig.add_trace(
+            go.Scatter(x=data['elapsed_time'], y=mechanical_power,
+                      name='Mechanical Power', line=dict(color='orange')),
+            row=2, col=1
+        )
+        
+        # Efficiency analysis
+        efficiency = mechanical_power / (electrical_power + 1e-6) * 100  # Avoid division by zero
+        fig.add_trace(
+            go.Scatter(x=data['elapsed_time'], y=efficiency,
+                      name='Efficiency (%)', line=dict(color='purple')),
+            row=3, col=1
+        )
         
         fig.update_layout(
-            title='Current vs Time',
-            xaxis_title='Time (s)',
-            yaxis_title='Current (A)',
-            showlegend=True
+            title='Current Control Analysis',
+            height=1000,
+            showlegend=True,
+            hovermode='x unified'
         )
         
         return fig
@@ -646,6 +848,224 @@ class TestResultsDashboard:
             ], style={'margin': '20px auto'})
         ])
         
+    def _create_motor_specs_table(self, metadata: Dict) -> html.Div:
+        """Create a table showing motor specifications."""
+        print("\n=== Motor Specifications ===")
+        print(f"Metadata keys: {metadata.keys()}")
+        
+        # Try different possible locations for motor specs
+        motor_specs = metadata.get('motor_specs', {})
+        if not motor_specs:
+            motor_specs = metadata.get('motor', {})
+        if not motor_specs:
+            motor_specs = metadata.get('motor_parameters', {})
+            
+        print(f"Motor specs found: {motor_specs}")
+        
+        if not motor_specs:
+            return html.Div("No motor specifications available")
+            
+        # Extract motor type from various possible locations
+        motor_type = (
+            motor_specs.get('type') or 
+            motor_specs.get('motor_type') or 
+            motor_specs.get('model') or 
+            'N/A'
+        )
+        
+        table = html.Table([
+            html.Thead(
+                html.Tr([
+                    html.Th("Parameter"),
+                    html.Th("Value"),
+                    html.Th("Unit")
+                ])
+            ),
+            html.Tbody([
+                html.Tr([
+                    html.Td("Motor Type"),
+                    html.Td(motor_type),
+                    html.Td("")
+                ]),
+                html.Tr([
+                    html.Td("Rated Power"),
+                    html.Td(f"{motor_specs.get('rated_power', motor_specs.get('power', 0)):.1f}"),
+                    html.Td("W")
+                ]),
+                html.Tr([
+                    html.Td("Rated Torque"),
+                    html.Td(f"{motor_specs.get('rated_torque', motor_specs.get('torque', 0)):.2f}"),
+                    html.Td("N⋅m")
+                ]),
+                html.Tr([
+                    html.Td("Rated Speed"),
+                    html.Td(f"{motor_specs.get('rated_speed', motor_specs.get('speed', 0)):.1f}"),
+                    html.Td("RPM")
+                ]),
+                html.Tr([
+                    html.Td("Rated Current"),
+                    html.Td(f"{motor_specs.get('rated_current', motor_specs.get('current', 0)):.1f}"),
+                    html.Td("A")
+                ]),
+                html.Tr([
+                    html.Td("Rated Voltage"),
+                    html.Td(f"{motor_specs.get('rated_voltage', motor_specs.get('voltage', 0)):.1f}"),
+                    html.Td("V")
+                ]),
+                html.Tr([
+                    html.Td("Encoder Resolution"),
+                    html.Td(f"{motor_specs.get('encoder_resolution', motor_specs.get('resolution', 0))}"),
+                    html.Td("counts/rev")
+                ]),
+                html.Tr([
+                    html.Td("Gear Ratio"),
+                    html.Td(f"{motor_specs.get('gear_ratio', motor_specs.get('ratio', 1)):.1f}"),
+                    html.Td("")
+                ])
+            ])
+        ], style={'width': '100%', 'border': '1px solid black'})
+        
+        return table
+        
+    def _create_sensor_specs_table(self, metadata: Dict) -> html.Div:
+        """Create a table showing sensor specifications."""
+        print("\n=== Sensor Specifications ===")
+        print(f"Metadata keys: {metadata.keys()}")
+        
+        # Try different possible locations for sensor specs
+        sensor_specs = metadata.get('sensor_specs', {})
+        if not sensor_specs:
+            sensor_specs = metadata.get('sensors', {})
+        if not sensor_specs:
+            sensor_specs = metadata.get('sensor_parameters', {})
+            
+        print(f"Sensor specs found: {sensor_specs}")
+        
+        if not sensor_specs:
+            return html.Div("No sensor specifications available")
+            
+        # Helper function to get sensor type
+        def get_sensor_type(sensor_data):
+            return (
+                sensor_data.get('type') or
+                sensor_data.get('sensor_type') or
+                sensor_data.get('model') or
+                'N/A'
+            )
+            
+        # Helper function to get sensor specs
+        def get_sensor_specs(sensor_name):
+            sensor_data = sensor_specs.get(sensor_name, {})
+            if not sensor_data:
+                # Try alternative naming
+                alt_name = {
+                    'position': ['pos', 'encoder', 'angle'],
+                    'velocity': ['vel', 'speed', 'tachometer'],
+                    'current': ['curr', 'amp', 'current_sensor'],
+                    'torque': ['torque', 'force', 'load_cell']
+                }.get(sensor_name, [])
+                
+                for name in alt_name:
+                    if name in sensor_specs:
+                        sensor_data = sensor_specs[name]
+                        break
+                        
+            return sensor_data
+            
+        table = html.Table([
+            html.Thead(
+                html.Tr([
+                    html.Th("Sensor Type"),
+                    html.Th("Parameter"),
+                    html.Th("Value"),
+                    html.Th("Unit")
+                ])
+            ),
+            html.Tbody([
+                # Position Sensor
+                html.Tr([
+                    html.Td("Position Sensor"),
+                    html.Td("Type"),
+                    html.Td(get_sensor_type(get_sensor_specs('position'))),
+                    html.Td("")
+                ]),
+                html.Tr([
+                    html.Td(""),
+                    html.Td("Resolution"),
+                    html.Td(f"{get_sensor_specs('position').get('resolution', 0):.3f}"),
+                    html.Td("rad")
+                ]),
+                html.Tr([
+                    html.Td(""),
+                    html.Td("Range"),
+                    html.Td(f"±{get_sensor_specs('position').get('range', 0):.1f}"),
+                    html.Td("rad")
+                ]),
+                
+                # Velocity Sensor
+                html.Tr([
+                    html.Td("Velocity Sensor"),
+                    html.Td("Type"),
+                    html.Td(get_sensor_type(get_sensor_specs('velocity'))),
+                    html.Td("")
+                ]),
+                html.Tr([
+                    html.Td(""),
+                    html.Td("Resolution"),
+                    html.Td(f"{get_sensor_specs('velocity').get('resolution', 0):.3f}"),
+                    html.Td("rad/s")
+                ]),
+                html.Tr([
+                    html.Td(""),
+                    html.Td("Range"),
+                    html.Td(f"±{get_sensor_specs('velocity').get('range', 0):.1f}"),
+                    html.Td("rad/s")
+                ]),
+                
+                # Current Sensor
+                html.Tr([
+                    html.Td("Current Sensor"),
+                    html.Td("Type"),
+                    html.Td(get_sensor_type(get_sensor_specs('current'))),
+                    html.Td("")
+                ]),
+                html.Tr([
+                    html.Td(""),
+                    html.Td("Resolution"),
+                    html.Td(f"{get_sensor_specs('current').get('resolution', 0):.3f}"),
+                    html.Td("A")
+                ]),
+                html.Tr([
+                    html.Td(""),
+                    html.Td("Range"),
+                    html.Td(f"±{get_sensor_specs('current').get('range', 0):.1f}"),
+                    html.Td("A")
+                ]),
+                
+                # Torque Sensor
+                html.Tr([
+                    html.Td("Torque Sensor"),
+                    html.Td("Type"),
+                    html.Td(get_sensor_type(get_sensor_specs('torque'))),
+                    html.Td("")
+                ]),
+                html.Tr([
+                    html.Td(""),
+                    html.Td("Resolution"),
+                    html.Td(f"{get_sensor_specs('torque').get('resolution', 0):.3f}"),
+                    html.Td("N⋅m")
+                ]),
+                html.Tr([
+                    html.Td(""),
+                    html.Td("Range"),
+                    html.Td(f"±{get_sensor_specs('torque').get('range', 0):.1f}"),
+                    html.Td("N⋅m")
+                ])
+            ])
+        ], style={'width': '100%', 'border': '1px solid black'})
+        
+        return table
+        
     def _create_config_comparison_table(self, test_data_list: List[Tuple[str, Dict]]) -> html.Div:
         """Create a table comparing configurations across tests."""
         rows = []
@@ -742,8 +1162,8 @@ class TestResultsDashboard:
         """Create a plot comparing raw and filtered sensor data."""
         data = test_data['data']
         
-        fig = make_subplots(rows=3, cols=1,
-                           subplot_titles=('Position', 'Velocity', 'Current'),
+        fig = make_subplots(rows=4, cols=1,
+                           subplot_titles=('Position', 'Velocity', 'Current', 'Torque'),
                            vertical_spacing=0.1)
         
         # Position comparison
@@ -782,9 +1202,28 @@ class TestResultsDashboard:
             row=3, col=1
         )
         
+        # Torque comparison
+        fig.add_trace(
+            go.Scatter(x=data['elapsed_time'], y=data['torque'],
+                      name='Torque', line=dict(color='orange')),
+            row=4, col=1
+        )
+        
+        # Update y-axis labels with units
+        fig.update_yaxes(title_text="Position (rad)", row=1, col=1)
+        fig.update_yaxes(title_text="Velocity (rad/s)", row=2, col=1)
+        fig.update_yaxes(title_text="Current (A)", row=3, col=1)
+        fig.update_yaxes(title_text="Torque (N⋅m)", row=4, col=1)
+        
+        # Update x-axis labels
+        fig.update_xaxes(title_text="Time (s)", row=1, col=1)
+        fig.update_xaxes(title_text="Time (s)", row=2, col=1)
+        fig.update_xaxes(title_text="Time (s)", row=3, col=1)
+        fig.update_xaxes(title_text="Time (s)", row=4, col=1)
+        
         fig.update_layout(
-            title='Raw vs Filtered Sensor Data',
-            height=900,
+            title='Sensor Data Analysis',
+            height=1200,
             showlegend=True,
             hovermode='x unified'
         )
@@ -824,6 +1263,16 @@ class TestResultsDashboard:
                       name='Current Noise', line=dict(color='red')),
             row=3, col=1
         )
+        
+        # Update y-axis labels with units
+        fig.update_yaxes(title_text="Position Noise (rad)", row=1, col=1)
+        fig.update_yaxes(title_text="Velocity Noise (rad/s)", row=2, col=1)
+        fig.update_yaxes(title_text="Current Noise (A)", row=3, col=1)
+        
+        # Update x-axis labels
+        fig.update_xaxes(title_text="Time (s)", row=1, col=1)
+        fig.update_xaxes(title_text="Time (s)", row=2, col=1)
+        fig.update_xaxes(title_text="Time (s)", row=3, col=1)
         
         fig.update_layout(
             title='Sensor Noise Analysis',
