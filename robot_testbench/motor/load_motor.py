@@ -93,7 +93,7 @@ class LoadMotor:
             'time': self._last_update_time
         }
 
-class TestLoad:
+class Load:
     """Configurable test load simulator."""
     
     def __init__(self):

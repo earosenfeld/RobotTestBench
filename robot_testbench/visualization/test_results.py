@@ -21,9 +21,9 @@ import logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-from ..analytics.test_analyzer import TestAnalyzer, PerformanceMetrics
+from ..analytics.test_analyzer import Analyzer, PerformanceMetrics
 
-class TestResultsDashboard:
+class ResultsDashboard:
     """Creates and manages the test results dashboard."""
     
     def __init__(self, data_dir: str = "data/logs"):
@@ -435,7 +435,7 @@ class TestResultsDashboard:
         setpoint = test_data["metadata"]["setpoint"]
         print(f"\nCalculating metrics with setpoint: {setpoint}")
         
-        analyzer = TestAnalyzer(data, setpoint)
+        analyzer = Analyzer(data, setpoint)
         metrics = analyzer.compute_metrics()
         print(f"Calculated metrics: {metrics}")
         
@@ -1171,7 +1171,7 @@ class TestResultsDashboard:
         for metric_name, metric_key, unit in metrics:
             cells = [html.Td(metric_name)]
             for _, test_data in test_data_list:
-                analyzer = TestAnalyzer(test_data['data'], test_data['metadata']['setpoint'])
+                analyzer = Analyzer(test_data['data'], test_data['metadata']['setpoint'])
                 metrics = analyzer.compute_metrics()
                 value = getattr(metrics, metric_key)
                 cells.append(html.Td(f"{value:.3f} {unit}"))
@@ -1437,7 +1437,6 @@ class TestResultsDashboard:
         fig.add_trace(go.Scatter(x=time, y=power_loss, name='Power Loss', line=dict(color='red', dash='dot')), row=1, col=1)
         fig.add_trace(go.Scatter(x=time, y=[mean_power]*len(time), name='Mean', line=dict(color='blue', dash='dash')), row=1, col=1)
         fig.add_trace(go.Scatter(x=time, y=[ucl_power]*len(time), name='+3σ', line=dict(color='purple', dash='dot')), row=1, col=1)
-        fig.add_trace(go.Scatter(x=time, y=[lcl_power]*len(time), name='-3σ', line=dict(color='purple', dash='dot')), row=1, col=1)
         fig.add_trace(go.Scatter(x=time[out_of_control_power], y=electrical_power[out_of_control_power], mode='markers', name='Out of Control', marker=dict(color='black', size=8, symbol='x')), row=1, col=1)
         fig.update_yaxes(title_text="Power (W)", row=1, col=1)
         fig.update_xaxes(title_text="Time (s)", row=1, col=1)
@@ -1462,4 +1461,4 @@ class TestResultsDashboard:
     def run_server(self, debug: bool = True, port: int = 8050):
         """Run the dashboard server."""
         print(f"\nStarting dashboard server on port {port}")
-        self.app.run_server(debug=debug, port=port) 
+        self.app.run(debug=debug, port=port) 

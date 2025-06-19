@@ -94,6 +94,39 @@ def create_sample_test_data():
             "position_noise": 0.01,
             "velocity_noise": 0.1,
             "current_noise": 0.05
+        },
+        "motor_specs": {
+            "type": "DC Motor",
+            "model": "Sample Test Motor",
+            "rated_power": 50,
+            "rated_torque": 0.5,
+            "rated_speed": 3000,
+            "rated_current": 2.0,
+            "rated_voltage": 24,
+            "encoder_resolution": 1024,
+            "gear_ratio": 1.0
+        },
+        "sensor_specs": {
+            "position": {
+                "type": "Quadrature Encoder",
+                "resolution": 0.006,
+                "range": 6.28
+            },
+            "velocity": {
+                "type": "Derived from Encoder",
+                "resolution": 0.1,
+                "range": 50
+            },
+            "current": {
+                "type": "Hall Effect Current Sensor",
+                "resolution": 0.01,
+                "range": 5
+            },
+            "torque": {
+                "type": "Strain Gauge Load Cell",
+                "resolution": 0.01,
+                "range": 10
+            }
         }
     }
     

@@ -107,7 +107,7 @@ class DynoSimulator:
         if 'decoupled' in self.faults:
             reactive_torque = 0.0
         else:
-        reactive_torque = self._calculate_reactive_torque()
+            reactive_torque = self._calculate_reactive_torque()
         # Step drive motor with reactive torque as load
         drive_pos, drive_vel, drive_curr = self.drive_motor.step(dt, drive_voltage)
         # Step load motor with reactive torque and back EMF

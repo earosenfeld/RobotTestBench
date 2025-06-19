@@ -8,10 +8,10 @@ from dataclasses import dataclass
 from typing import Dict, List, Optional, Union
 from pathlib import Path
 from robot_testbench.motor import MotorSimulator, MotorParameters
-from robot_testbench.motor import LoadMotor, LoadMotorParameters, TestLoad
+from robot_testbench.motor import LoadMotor, LoadMotorParameters, Load
 
 @dataclass
-class TestStep:
+class Step:
     """Configuration for a single test step."""
     name: str
     duration: float  # seconds
@@ -25,33 +25,33 @@ class TestStep:
     timeout: float = None
 
 @dataclass
-class TestPlan:
+class Plan:
     """Complete test plan configuration."""
     name: str
     description: str
     motor_params: MotorParameters
     load_params: LoadMotorParameters
-    steps: List[TestStep]
+    steps: List[Step]
     sample_rate: float = 1000.0  # Hz
     data_log_path: Optional[str] = None
 
-class TestExecutor:
+class Executor:
     """Executes test plans and collects results."""
     
-    def __init__(self, plan: TestPlan):
+    def __init__(self, plan: Plan):
         """Initialize test executor with a test plan."""
         self.plan = plan
         self.motor = MotorSimulator(plan.motor_params)
         self.load = LoadMotor(plan.load_params)
-        self.test_load = TestLoad()
+        self.test_load = Load()
         self.dt = 1.0 / plan.sample_rate
         self.results = []
         
-    def _load_step(self, step: TestStep):
+    def _load_step(self, step: Step):
         """Configure load for a test step."""
         self.test_load.set_load_type(step.load_type, **step.load_params)
         
-    def _check_specs(self, step: TestStep, data: Dict) -> Dict:
+    def _check_specs(self, step: Step, data: Dict) -> Dict:
         """Check if test data meets specifications."""
         specs = {
             'passed': True,
@@ -96,7 +96,7 @@ class TestExecutor:
                 
         return specs
         
-    def run_step(self, step: TestStep) -> Dict:
+    def run_step(self, step: Step) -> Dict:
         """Run a single test step and return results."""
         self._load_step(step)
         
@@ -176,7 +176,7 @@ class TestExecutor:
         with open(log_path / specs_filename, 'w') as f:
             yaml.dump(result['specs'], f)
 
-def load_test_plan(yaml_path: str) -> TestPlan:
+def load_test_plan(yaml_path: str) -> Plan:
     """Load a test plan from a YAML file."""
     with open(yaml_path, 'r') as f:
         config = yaml.safe_load(f)
@@ -188,9 +188,9 @@ def load_test_plan(yaml_path: str) -> TestPlan:
     load_params = LoadMotorParameters(**config['load_params'])
     
     # Convert test steps
-    steps = [TestStep(**step) for step in config['steps']]
+    steps = [Step(**step) for step in config['steps']]
     
-    return TestPlan(
+    return Plan(
         name=config['name'],
         description=config['description'],
         motor_params=motor_params,

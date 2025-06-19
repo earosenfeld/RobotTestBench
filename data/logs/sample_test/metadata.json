@@ -1,0 +1,67 @@
+{
+  "test_name": "sample_test",
+  "timestamp": "2025-06-19T11:23:18.272865",
+  "motor_params": {
+    "inertia": 0.05,
+    "damping": 0.1,
+    "torque_constant": 0.1,
+    "max_torque": 4.0,
+    "max_speed": 20.0,
+    "resistance": 1.0,
+    "inductance": 0.1,
+    "thermal_mass": 0.1,
+    "thermal_resistance": 0.5,
+    "gear_ratio": 1.0,
+    "gear_efficiency": 1.0,
+    "ambient_temp": 25.0,
+    "max_temp": 100.0,
+    "temp_coeff": 0.0039
+  },
+  "pid_gains": {
+    "kp": 5.0,
+    "ki": 0.2,
+    "kd": 0.5
+  },
+  "control_mode": "position",
+  "setpoint": 1.0,
+  "duration": 10.0,
+  "sample_rate": 1000.0,
+  "sensor_params": {
+    "position_noise": 0.01,
+    "velocity_noise": 0.1,
+    "current_noise": 0.05
+  },
+  "motor_specs": {
+    "type": "DC Motor",
+    "model": "Sample Test Motor",
+    "rated_power": 50,
+    "rated_torque": 0.5,
+    "rated_speed": 3000,
+    "rated_current": 2.0,
+    "rated_voltage": 24,
+    "encoder_resolution": 1024,
+    "gear_ratio": 1.0
+  },
+  "sensor_specs": {
+    "position": {
+      "type": "Quadrature Encoder",
+      "resolution": 0.006,
+      "range": 6.28
+    },
+    "velocity": {
+      "type": "Derived from Encoder",
+      "resolution": 0.1,
+      "range": 50
+    },
+    "current": {
+      "type": "Hall Effect Current Sensor",
+      "resolution": 0.01,
+      "range": 5
+    },
+    "torque": {
+      "type": "Strain Gauge Load Cell",
+      "resolution": 0.01,
+      "range": 10
+    }
+  }
+}

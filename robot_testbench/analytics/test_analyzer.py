@@ -22,7 +22,7 @@ class PerformanceMetrics:
     peak_torque: float  # Maximum torque
     peak_velocity: float  # Maximum velocity
 
-class TestAnalyzer:
+class Analyzer:
     """Analyzes test data and computes performance metrics."""
     
     def __init__(self, data: pd.DataFrame, setpoint: float):

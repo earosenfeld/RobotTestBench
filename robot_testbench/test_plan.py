@@ -8,7 +8,7 @@ from pathlib import Path
 import yaml
 
 @dataclass
-class TestStep:
+class Step:
     """A single step in a test plan."""
     name: str
     duration: float
@@ -22,17 +22,17 @@ class TestStep:
     timeout: float = None
 
 @dataclass
-class TestPlan:
+class Plan:
     """A complete test plan with multiple steps."""
     name: str
     description: str
-    steps: List[TestStep]
+    steps: List[Step]
     metadata: Dict[str, str] = None
 
-class TestExecutor:
+class Executor:
     """Executes a test plan and collects results."""
     
-    def __init__(self, test_plan: TestPlan):
+    def __init__(self, test_plan: Plan):
         self.test_plan = test_plan
         self.current_step = 0
         self.results = []
@@ -62,7 +62,7 @@ class TestExecutor:
             
         return step.setpoint
 
-def load_test_plan(file_path: Union[str, Path]) -> TestPlan:
+def load_test_plan(file_path: Union[str, Path]) -> Plan:
     """
     Load a test plan from a YAML file.
     
@@ -70,14 +70,14 @@ def load_test_plan(file_path: Union[str, Path]) -> TestPlan:
         file_path: Path to the YAML file
         
     Returns:
-        TestPlan object
+        Plan object
     """
     with open(file_path, 'r') as f:
         data = yaml.safe_load(f)
         
     steps = []
     for step_data in data['steps']:
-        step = TestStep(
+        step = Step(
             name=step_data['name'],
             duration=step_data['duration'],
             setpoint=step_data['setpoint'],
@@ -91,7 +91,7 @@ def load_test_plan(file_path: Union[str, Path]) -> TestPlan:
         )
         steps.append(step)
         
-    return TestPlan(
+    return Plan(
         name=data['name'],
         description=data['description'],
         steps=steps,

@@ -1,6 +1,6 @@
-from .test_analyzer import PerformanceMetrics, TestAnalyzer
+from .test_analyzer import PerformanceMetrics, Analyzer
  
 __all__ = [
     'PerformanceMetrics',
-    'TestAnalyzer',
+    'Analyzer',
 ] 

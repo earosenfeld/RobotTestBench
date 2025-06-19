@@ -10,7 +10,8 @@ from .sensors import (
     ForceTorqueSensor,
     ForceTorqueSensorConfig,
     JointAngleSensor,
-    JointAngleSensorConfig
+    JointAngleSensorConfig,
+    DAQSimulator
 )
 
 __all__ = [
@@ -21,5 +22,6 @@ __all__ = [
     'ForceTorqueSensor',
     'ForceTorqueSensorConfig',
     'JointAngleSensor',
-    'JointAngleSensorConfig'
+    'JointAngleSensorConfig',
+    'DAQSimulator'
 ] 

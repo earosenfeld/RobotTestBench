@@ -4,7 +4,7 @@ Tests for load motor and test load simulation.
 
 import pytest
 import numpy as np
-from robot_testbench.motor import LoadMotorParameters, LoadMotor, TestLoad
+from robot_testbench.motor import LoadMotorParameters, LoadMotor, Load
 from robot_testbench.motor import MotorParameters, MotorSimulator
 
 @pytest.fixture
@@ -71,7 +71,7 @@ def test_load_motor_step(load_motor_params):
 
 def test_test_load_constant_torque():
     """Test constant torque load."""
-    test_load = TestLoad()
+    test_load = Load()
     test_load.set_load_type('constant_torque', constant_torque=1.0)
     
     torque = test_load.get_load_torque(1.0, 0.001)
@@ -82,7 +82,7 @@ def test_test_load_constant_torque():
 
 def test_test_load_inertial():
     """Test inertial load."""
-    test_load = TestLoad()
+    test_load = Load()
     test_load.set_load_type('inertial', inertia=0.1)
     
     torque = test_load.get_load_torque(1.0, 0.001)
@@ -93,7 +93,7 @@ def test_test_load_inertial():
 
 def test_test_load_friction_ramp():
     """Test friction ramp load."""
-    test_load = TestLoad()
+    test_load = Load()
     test_load.set_load_type(
         'friction_ramp',
         friction_start=0.1,
@@ -115,7 +115,7 @@ def test_test_load_friction_ramp():
 
 def test_test_load_regenerative():
     """Test regenerative braking load."""
-    test_load = TestLoad()
+    test_load = Load()
     test_load.set_load_type('regenerative', regenerative_voltage=12.0)
     
     # Positive velocity (generating)

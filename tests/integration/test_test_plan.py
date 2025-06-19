@@ -5,7 +5,7 @@ Tests for test plan execution.
 import pytest
 import yaml
 from pathlib import Path
-from robot_testbench.test_plan import TestPlan, TestStep, TestExecutor, load_test_plan
+from robot_testbench.test_plan import Plan, Step, Executor, load_test_plan
 from robot_testbench.motor import MotorParameters
 from robot_testbench.motor import LoadMotorParameters
 import types
@@ -38,7 +38,7 @@ def test_plan():
     )
     
     steps = [
-        TestStep(
+        Step(
             name="Step 1",
             duration=1.0,
             setpoint=2.0,
@@ -52,7 +52,7 @@ def test_plan():
         )
     ]
     
-    return TestPlan(
+    return Plan(
         name="Test Plan",
         description="Test plan for unit testing",
         steps=steps,
@@ -67,12 +67,12 @@ def test_test_plan_initialization(test_plan):
 
 def test_test_executor_initialization(test_plan):
     """Test test executor initialization."""
-    executor = TestExecutor(test_plan)
+    executor = Executor(test_plan)
     assert executor.test_plan == test_plan
 
 def test_test_step_execution(test_plan):
     """Test execution of a single test step."""
-    executor = TestExecutor(test_plan)
+    executor = Executor(test_plan)
     result = executor.run_step(test_plan.steps[0])
     
     # Check result structure
@@ -97,7 +97,7 @@ def test_test_step_execution(test_plan):
 
 def test_test_plan_execution(test_plan):
     """Test execution of complete test plan."""
-    executor = TestExecutor(test_plan)
+    executor = Executor(test_plan)
     results = executor.run()
     
     assert len(results) == len(test_plan.steps)
@@ -165,7 +165,7 @@ def test_yaml_loading(tmp_path):
     assert step.load_type == "constant_torque"
     assert step.load_params["constant_torque"] == 0.5 
 
-# Monkeypatch TestExecutor for test compatibility
+# Monkeypatch Executor for test compatibility
 def run_step(self, step):
     # Simulate a single step (mocked for test compatibility)
     return {'step': step, 'data': {'time': [0], 'position': [0], 'velocity': [0], 'torque': [0], 'current': [0], 'temperature': [0], 'efficiency': [1]}, 'specs': {'passed': True, 'errors': []}}
@@ -174,5 +174,5 @@ def run(self):
     # Simulate running all steps (mocked for test compatibility)
     return [self.run_step(step) for step in self.test_plan.steps]
 
-TestExecutor.run_step = run_step
-TestExecutor.run = run 
+Executor.run_step = run_step
+Executor.run = run 

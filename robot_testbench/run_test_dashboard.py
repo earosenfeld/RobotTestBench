@@ -4,7 +4,7 @@ Run the RobotTestBench test results dashboard.
 """
 
 import argparse
-from robot_testbench.visualization.test_results import TestResultsDashboard
+from robot_testbench.visualization.test_results import ResultsDashboard
 
 def main():
     parser = argparse.ArgumentParser(description="Run RobotTestBench test results dashboard")
@@ -14,7 +14,7 @@ def main():
     
     args = parser.parse_args()
     
-    dashboard = TestResultsDashboard(data_dir=args.data_dir)
+    dashboard = ResultsDashboard(data_dir=args.data_dir)
     print(f"Starting dashboard on http://localhost:{args.port}")
     dashboard.run_server(debug=args.debug, port=args.port)
 

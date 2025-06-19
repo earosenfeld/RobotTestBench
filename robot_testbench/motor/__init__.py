@@ -4,7 +4,7 @@ Motor simulation and control module.
 
 from .motor_simulator import MotorSimulator, MotorParameters
 from .dyno import DynoSimulator, DynoParameters
-from .load_motor import LoadMotor, LoadMotorParameters, TestLoad
+from .load_motor import LoadMotor, LoadMotorParameters, Load
 from .electrical import (
     PowerSupply,
     PowerSupplyConfig,
@@ -21,7 +21,7 @@ __all__ = [
     'DynoParameters',
     'LoadMotor',
     'LoadMotorParameters',
-    'TestLoad',
+    'Load',
     'PowerSupply',
     'PowerSupplyConfig',
     'I2CInterface',
